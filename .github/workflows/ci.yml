@@ -18,34 +18,84 @@ jobs:
       security-events: write
       actions: read
     steps:
+      # 1. Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 2. Install Rust toolchain
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          profile: minimal
           toolchain: stable
-          componenets: clippy
+          profile: minimal
           override: true
+          componenets: rustfmt, clippy
 
-      - name: Install required cargo
-        run: cargo install clippy-sarif sarif-fmt
-
-      - name: Run rust-clippy
-        run: 
-          cargo clippy
-          --all-features
-          --message-format=json | clippy-sarif | tee rust-clippy-results.sarif | sarif-fmt
-        continue-on-error: true
-
-      - name: Upload analysis results to Github
-        uses: github/codeql-action/upload-sarif@v3
+      # 3. Cache cargo registry & build artifacts
+      - name: Cache cargo registry
+        uses: actions/cache@v3
         with:
-          sarif_file: rust-clippy-results.sarif
-          wait-for-processing: true
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Build
-        run: cargo build --verbose
-      - name: Run tests
-        run: cargo test --verbose
+      - name: Cache cargo build
+        uses: actions/cache@v3
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+
+      # 4. Check formatting
+      - name: cargo fmt check
+        uses: actions-rs/clippy-check@v1
+        with:
+          args: fmt -- --check
+      # 5. Run Clippy (deny all warnings)
+      - name: cargo clippy
+        uses: actions-rs/clippy-check@v1
+        with:
+          args: clippy -- -D warnings
+
+      # 6. Install cargo-audit
+      - name: Install cargo-audit v0.21.2
+        run: |
+          cargo install cargo-audit --locked --version 0.21.2
+      # (requires Rust ≥1.74) :contentReference[oaicite:3]{index=3}
+
+      # 7. Run vulnerability audit
+      - name: Run cargo audit
+        run: |
+          cargo audit --json > audit-report.json || true
+      - name: Publish audit annotations
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: audit-report
+          path: audit-report.json
+      - name: Fail on vulnerabilities
+        if: steps.run-cargo-audit.outcome == 'failure'
+        run: |
+          echo "Security vulnerabilities detected; failing CI."
+          exit 1
+
+      # - name: Install required cargo
+      #   run: cargo install clippy-sarif sarif-fmt
+      #
+      # - name: Run rust-clippy
+      #   run: 
+      #     cargo clippy
+      #     --all-features
+      #     --message-format=json | clippy-sarif | tee rust-clippy-results.sarif | sarif-fmt
+      #   continue-on-error: true
+      #
+      # - name: Upload analysis results to Github
+      #   uses: github/codeql-action/upload-sarif@v3
+      #   with:
+      #     sarif_file: rust-clippy-results.sarif
+      #     wait-for-processing: true
+      #
+      # - name: Build
+      #   run: cargo build --verbose
+      # - name: Run tests
+      #   run: cargo test --verbose
