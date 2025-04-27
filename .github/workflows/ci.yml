@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  rust-clippy-analyze:
+  rust-ci:
     name: Run rust-clippy analyzing
     runs-on: ubuntu-latest
     permissions:
@@ -24,7 +24,8 @@ jobs:
 
       # 2. Install Rust toolchain
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        # uses: actions-rs/toolchain@v1
+        uses: dtolnay/toolchain@v1
         with:
           toolchain: stable
           profile: minimal
