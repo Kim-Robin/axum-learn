@@ -11,7 +11,7 @@ env:
 
 jobs:
   rust-ci:
-    name: Run rust-clippy analyzing
+    name: Run rust ci
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -28,8 +28,6 @@ jobs:
         uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: stable
-          profile: minimal
-          override: true
           components: rustfmt, clippy
 
       # 3. Cache cargo registry & build artifacts
