@@ -46,6 +46,10 @@ jobs:
           path: target
           key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
 
+      # FORMAT
+      - name: Check code formatting
+        run: cargo fmt --all -- --check
+
       # Build 
       - name: Build
         run: cargo build --verbose
@@ -60,7 +64,7 @@ jobs:
         run: cargo clippy --all-targets --all-features -- -D warnings
 
       # 5. Install cargo-audit and Run vulnerability audit
-      - name: Install cargo-audit v0.21.2
+      - name: Install cargo-audit
         run: |
           cargo install cargo-audit --locked
           cargo audit --json > audit-report.json
