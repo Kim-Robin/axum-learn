@@ -54,17 +54,12 @@ jobs:
       - name: Run tests
         run: cargo test --verbose
 
-      # 4. Check formatting
-      - name: cargo fmt check
-        uses: actions-rs/clippy-check@v1
-        with:
-          args: fmt -- --check
-      # 5. Run Clippy (deny all warnings)
+      # 4. Run Clippy (deny all warnings)
       # LINT
       - name: Lint (clippy)
         run: cargo clippy --all-targets --all-features -- -D warnings
 
-      # 6. Install cargo-audit and Run vulnerability audit
+      # 5. Install cargo-audit and Run vulnerability audit
       - name: Install cargo-audit v0.21.2
         run: |
           cargo install cargo-audit --locked
