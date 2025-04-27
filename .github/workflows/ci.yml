@@ -29,7 +29,7 @@ jobs:
           toolchain: stable
           profile: minimal
           override: true
-          componenets: rustfmt, clippy
+          components: rustfmt, clippy
 
       # 3. Cache cargo registry & build artifacts
       - name: Cache cargo registry
