@@ -46,38 +46,36 @@ jobs:
           path: target
           key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
 
+      # Build 
+      - name: Build
+        run: cargo build --verbose
+
+      # Test
+      - name: Run tests
+        run: cargo test --verbose
+
       # 4. Check formatting
       - name: cargo fmt check
         uses: actions-rs/clippy-check@v1
         with:
           args: fmt -- --check
       # 5. Run Clippy (deny all warnings)
-      - name: cargo clippy
-        uses: actions-rs/clippy-check@v1
-        with:
-          args: clippy -- -D warnings
+      # LINT
+      - name: Lint (clippy)
+        run: cargo clippy --all-targets --all-features -- -D warnings
 
-      # 6. Install cargo-audit
+      # 6. Install cargo-audit and Run vulnerability audit
       - name: Install cargo-audit v0.21.2
         run: |
-          cargo install cargo-audit --locked --version 0.21.2
-      # (requires Rust ≥1.74) :contentReference[oaicite:3]{index=3}
+          cargo install cargo-audit --locked
+          cargo audit --json > audit-report.json
 
-      # 7. Run vulnerability audit
-      - name: Run cargo audit
-        run: |
-          cargo audit --json > audit-report.json || true
       - name: Publish audit annotations
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: audit-report
           path: audit-report.json
-      - name: Fail on vulnerabilities
-        if: steps.run-cargo-audit.outcome == 'failure'
-        run: |
-          echo "Security vulnerabilities detected; failing CI."
-          exit 1
+          retention-days: 7
 
       # - name: Install required cargo
       #   run: cargo install clippy-sarif sarif-fmt
